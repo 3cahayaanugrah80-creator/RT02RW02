@@ -3,7 +3,7 @@
 // Isi dua nilai di bawah ini dengan Project URL dan
 // Publishable/anon key dari Project Settings > API di Supabase.
 // ============================================================
-const SUPABASE_URL = "https://hdusgfmqhvrsbvcmgmdi.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://hdusgfmqhvrsbvcmgmdi.supabase.co";
 const SUPABASE_KEY = "sb_publishable_gTB2j9Qxx2gCnLkuBpVEuQ_2NoZ0Ott";
 
 async function sb(path, { method = "GET", body, prefer } = {}) {
