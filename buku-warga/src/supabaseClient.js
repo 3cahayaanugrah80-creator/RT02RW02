@@ -3,8 +3,8 @@
 // Isi dua nilai di bawah ini dengan Project URL dan
 // Publishable/anon key dari Project Settings > API di Supabase.
 // ============================================================
-const SUPABASE_URL = "https://ISI-PROJECT-URL-KAMU.supabase.co";
-const SUPABASE_KEY = "ISI-PUBLISHABLE-ATAU-ANON-KEY-KAMU";
+const SUPABASE_URL = "https://hdusgfmqhvrsbvcmgmdi.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_gTB2j9Qxx2gCnLkuBpVEuQ_2NoZ0Ott";
 
 async function sb(path, { method = "GET", body, prefer } = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
