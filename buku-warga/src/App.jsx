@@ -6,6 +6,33 @@ import {
   Shield, CalendarDays
 } from "lucide-react";
 import * as db from "./supabaseClient";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+function makeMarkerIcon(color) {
+  return L.divIcon({
+    className: "",
+    html: `<svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">
+      <path d="M13 0C5.8 0 0 5.8 0 13c0 9.5 13 21 13 21s13-11.5 13-21C26 5.8 20.2 0 13 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="13" cy="13" r="5" fill="#fff"/>
+    </svg>`,
+    iconSize: [26, 34],
+    iconAnchor: [13, 34],
+    popupAnchor: [0, -30],
+  });
+}
+
+const houseIcon = makeMarkerIcon("#33513F");
+const selectedIcon = makeMarkerIcon("#96442F");
+
+function RecenterMap({ center }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center[0], center[1]]);
+  return null;
+}
 
 const RELASI = ["Suami", "Istri", "Anak", "Orang Tua", "Mertua", "Famili Lain", "Pembantu/ART"];
 const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -692,32 +719,25 @@ function ListView({ families, allCount, search, setSearch, expanded, setExpanded
 
 function MapView({ families, role, selectedId, setSelectedId }) {
   const withCoords = families.filter((f) => f.lat !== "" && f.lng !== "" && !isNaN(parseFloat(f.lat)) && !isNaN(parseFloat(f.lng)));
-  const width = 720, height = 460, pad = 40;
 
-  const points = useMemo(() => {
-    if (withCoords.length === 0) return [];
-    const lats = withCoords.map((f) => parseFloat(f.lat));
-    const lngs = withCoords.map((f) => parseFloat(f.lng));
-    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-    const spanLat = maxLat - minLat || 0.0005;
-    const spanLng = maxLng - minLng || 0.0005;
-    return withCoords.map((f) => {
-      const lat = parseFloat(f.lat), lng = parseFloat(f.lng);
-      const x = pad + ((lng - minLng) / spanLng) * (width - pad * 2);
-      const y = pad + (1 - (lat - minLat) / spanLat) * (height - pad * 2);
-      return { ...f, x, y };
-    });
-  }, [withCoords]);
+  const points = useMemo(
+    () => withCoords.map((f) => ({ ...f, lat: parseFloat(f.lat), lng: parseFloat(f.lng) })),
+    [withCoords]
+  );
 
   const selected = points.find((p) => p.id === selectedId);
+  const center = selected
+    ? [selected.lat, selected.lng]
+    : points.length
+    ? [points[0].lat, points[0].lng]
+    : [-8.198417, 111.108803];
 
   return (
     <div className="max-w-5xl">
       <div className="mb-6">
         <h1 className="f-serif text-[26px]" style={{ fontWeight: 550 }}>Peta rumah warga</h1>
         <p className="text-[13.5px] mt-1" style={{ color: "var(--ink-soft)" }}>
-          Peta skematik berdasarkan koordinat yang dimasukkan &mdash; bukan citra satelit. {withCoords.length} dari {families.length} keluarga punya koordinat.
+          Peta asli berdasarkan koordinat rumah warga. {withCoords.length} dari {families.length} keluarga punya koordinat.
         </p>
       </div>
 
@@ -731,21 +751,31 @@ function MapView({ families, role, selectedId, setSelectedId }) {
         </div>
       ) : (
         <div className="flex gap-5 flex-col lg:flex-row">
-          <div style={{ border: "1px solid var(--line)", background: "#fff", flex: 1 }}>
-            <svg viewBox={`0 0 ${width} ${height}`} width="100%" style={{ display: "block" }}>
-              <rect x="0" y="0" width={width} height={height} fill="var(--paper-alt)" />
-              {Array.from({ length: 7 }).map((_, i) => (
-                <line key={"v" + i} x1={pad + (i * (width - pad * 2)) / 6} y1={pad} x2={pad + (i * (width - pad * 2)) / 6} y2={height - pad} stroke="var(--line)" strokeWidth="1" />
-              ))}
-              {Array.from({ length: 5 }).map((_, i) => (
-                <line key={"h" + i} x1={pad} y1={pad + (i * (height - pad * 2)) / 4} x2={width - pad} y2={pad + (i * (height - pad * 2)) / 4} stroke="var(--line)" strokeWidth="1" />
-              ))}
+          <div style={{ border: "1px solid var(--line)", background: "#fff", flex: 1, height: 460 }}>
+            <MapContainer center={center} zoom={points.length > 1 ? 15 : 17} style={{ height: "100%", width: "100%" }} scrollWheelZoom={true}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <RecenterMap center={center} />
               {points.map((p) => (
-                <g key={p.id} onClick={() => setSelectedId(p.id)} style={{ cursor: "pointer" }}>
-                  <circle cx={p.x} cy={p.y} r={selectedId === p.id ? 8 : 6} fill={selectedId === p.id ? "var(--brick)" : "var(--forest)"} stroke="#fff" strokeWidth="1.5" />
-                </g>
+                <Marker
+                  key={p.id}
+                  position={[p.lat, p.lng]}
+                  icon={p.id === selectedId ? selectedIcon : houseIcon}
+                  eventHandlers={{ click: () => setSelectedId(p.id) }}
+                >
+                  <Popup>
+                    <div style={{ fontFamily: "var(--f-sans)", minWidth: 160 }}>
+                      <p style={{ fontWeight: 600, margin: 0 }}>{p.namaKK || "(tanpa nama)"}</p>
+                      <p style={{ margin: "2px 0", color: "#55645A" }}>{p.alamat}</p>
+                      <p style={{ margin: "2px 0" }}>{1 + p.anggota.length} jiwa</p>
+                      {p.telepon && role === "pengurus" && <p style={{ margin: "2px 0" }}>{p.telepon}</p>}
+                    </div>
+                  </Popup>
+                </Marker>
               ))}
-            </svg>
+            </MapContainer>
           </div>
           <div className="w-full lg:w-[260px] shrink-0">
             {selected ? (
@@ -762,7 +792,7 @@ function MapView({ families, role, selectedId, setSelectedId }) {
                 </div>
               </div>
             ) : (
-              <p className="text-[13px] py-2" style={{ color: "var(--ink-soft)" }}>Klik titik di peta untuk melihat detail rumah.</p>
+              <p className="text-[13px] py-2" style={{ color: "var(--ink-soft)" }}>Klik penanda di peta untuk melihat detail rumah.</p>
             )}
             <div className="mt-4 flex flex-col gap-1.5 max-h-[300px] overflow-auto">
               {points.map((p) => (
