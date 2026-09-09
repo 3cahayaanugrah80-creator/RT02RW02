@@ -31,6 +31,11 @@ function RecenterMap({ center }) {
   useEffect(() => {
     map.setView(center, map.getZoom());
   }, [center[0], center[1]]);
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 200);
+    window.addEventListener("resize", () => map.invalidateSize());
+    return () => clearTimeout(t);
+  }, []);
   return null;
 }
 

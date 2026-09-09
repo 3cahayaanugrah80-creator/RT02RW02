@@ -6,3 +6,12 @@ html, body, #root {
   margin: 0;
   padding: 0;
 }
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+.leaflet-container img {
+  max-width: none !important;
+}
