@@ -756,7 +756,7 @@ function MapView({ families, role, selectedId, setSelectedId }) {
         </div>
       ) : (
         <div className="flex gap-5 flex-col lg:flex-row">
-          <div style={{ border: "1px solid var(--line)", background: "#fff", flex: 1, height: 460 }}>
+          <div style={{ border: "1px solid var(--line)", background: "#fff", height: 460, flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
             <MapContainer center={center} zoom={points.length > 1 ? 15 : 17} style={{ height: "100%", width: "100%" }} scrollWheelZoom={true}>
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
